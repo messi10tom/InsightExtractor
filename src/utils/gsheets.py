@@ -17,8 +17,8 @@ def get_google_sheet(link: str) -> pd.DataFrame:
 
     creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
     client = gspread.authorize(creds)
-
-    sheet = client.open(link).sheet1
+    
+    sheet = client.open_by_url(link).sheet1
     data = sheet.get_all_records()
 
     return pd.DataFrame(data)
