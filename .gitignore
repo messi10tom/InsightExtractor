@@ -1,2 +1,8 @@
 # Ignore virtual environment files
 IE/
+
+# Ignore the credentials file
+credentials.json
+
+# Ignore compiled Python files
+src/utils/__pycache__/
