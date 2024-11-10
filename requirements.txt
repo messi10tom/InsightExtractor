@@ -7,3 +7,7 @@ gspread
 selenium
 python-dotenv
 beautifulsoup4
+langchain-ollama
+langchain-chroma
+langchain
+langchain-text-splitters
