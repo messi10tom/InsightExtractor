@@ -1,6 +1,7 @@
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain.docstore.document import Document
+from langchain_core.runnables import RunnablePassthrough
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -23,8 +24,8 @@ The user has provided the following prompt to explain what they want in more det
 Based on the user's prompt and the provided web-scraped text data, extract the relevant data entities and present them in the following JSON format:
 
 [
-    {"name": "data entity 1", "value": "extracted value 1"},
-    {"name": "data entity 2", "value": "extracted value 2"},
+    {{"name": "data entity 1", "value": "extracted value 1"}},
+    {{"name": "data entity 2", "value": "extracted value 2"}},
     ...
 ]
 
@@ -49,20 +50,31 @@ def get_entity_from_ollama(web_data: list,
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     # Retrieve and generate using the relevant snippets of the web data.
     retriever = vectorstore.as_retriever()
+    retrieved_docs = retriever.get_relevant_documents(user_prompt)
 
+    # Combine retrieved documents into a single string
+    retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
+
+    # Format the data_entity list into a string
+    data_entity = "\n".join(data_entity)
     # Create a template 
     prompt = ChatPromptTemplate.from_template(template)
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
     
     rag_chain = (
-    {"WEB_DATA": retriever | format_docs,  "DATA_ENTITY": data_entity, "USER_PROMPT": user_prompt}
+    {
+            "WEB_DATA": lambda x: x,  
+            "DATA_ENTITY": lambda x: x,  # Join data entities as a string
+            "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
+    }
     | prompt
     | model
-    | StrOutputParser()
-)
-    return rag_chain.invoke()
-
+    | StrOutputParser())
+    
+    return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
+                             "DATA_ENTITY": data_entity, 
+                             "USER_PROMPT": user_prompt})
 
     
-get_entity_from_ollama(["This is a sample text data from the web"], ["data entity 1", "data entity 2"], "User's prompt")
+def formated_output(output: str) -> str:
+    
+    return output

@@ -71,8 +71,9 @@ def main():
 
                 return
             print('successfully scraped')
+    
             text = extract_text_from_html(html)
-            entity = get_entity_from_ollama(text, df.columns[1:], user_prompt)
+            entity = get_entity_from_ollama(text, df.columns[1:].to_list(), user_prompt)
             st.write(entity)
 
 
