@@ -37,21 +37,23 @@ id = "llama3.2:1b"
 
 # TODO: implement placeholder for users to add
 
-def get_entity_from_ollama(web_data: list, 
+def get_entity_from_ollama(web_data: str, 
                            data_entity: list, 
                            user_prompt: str) -> str:
-    
+
+
     embeddings = OllamaEmbeddings(model=id)
     model = OllamaLLM(model=id)
-    context = [Document(page_content=doc) for doc in web_data]
+    context = [Document(page_content=web_data)]
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(context)
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+
     # Retrieve and generate using the relevant snippets of the web data.
     retriever = vectorstore.as_retriever()
     retrieved_docs = retriever.get_relevant_documents(user_prompt)
-
+ 
     # Combine retrieved documents into a single string
     retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
 
@@ -59,6 +61,8 @@ def get_entity_from_ollama(web_data: list,
     data_entity = "\n".join(data_entity)
     # Create a template 
     prompt = ChatPromptTemplate.from_template(template)
+    print("prompt created")
+    print(prompt)
     
     rag_chain = (
     {
@@ -78,3 +82,5 @@ def get_entity_from_ollama(web_data: list,
 def formated_output(output: str) -> str:
     
     return output
+
+

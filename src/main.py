@@ -1,11 +1,80 @@
 # src/main.py
 
+# import sys
+# import os
+
+# # Add the src directory to the Python path
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 import streamlit as st
 import pandas as pd
-from UI.ui import upload_csv, google_sheet
+from utils.gsheets import get_google_sheet
+from gspread.exceptions import NoValidUrlKeyFound
 from llm.engine import get_entity_from_ollama
 from selenium.common.exceptions import WebDriverException
 from scraper.webscraper import scrape, extract_text_from_html
+
+
+
+def upload_csv_from_device() -> pd.DataFrame:
+    # get the uploaded file
+    uploaded_files = st.file_uploader(
+    "Choose a CSV file", accept_multiple_files=False
+    )
+
+    # TODO: Add multiple file upload
+
+    # for uploaded_file in uploaded_files:
+    #     bytes_data = uploaded_file.read()
+    #     st.write("filename:", uploaded_file.name)
+    #     st.write(bytes_data)
+
+
+    if uploaded_files is not None:
+        # convert the uploaded file to a pandas dataframe
+        try:
+
+            df = pd.read_csv(uploaded_files)
+
+        except UnicodeDecodeError:
+            st.error("Invalid file format")
+            return None
+        
+        except pd.errors.ParserError:
+            st.error("Invalid file format")
+            return None
+        # display the dataframe
+        st.write(df)
+
+        return df
+    
+    return None
+
+
+
+
+def CSV_from_google_sheet() -> pd.DataFrame:
+    
+    # TODO: Multiple pages in google sheets
+
+    # get the link of the google sheet
+    link = st.text_input("Enter the link of the google sheet")
+    if st.button("Get Google Sheet"):
+        # get the google sheet data
+        try:
+            df = pd.DataFrame(get_google_sheet(link))
+        except PermissionError:
+            st.error('In sheets, change access "Restricted" to "Anyone with link"')
+            return None
+        
+        except NoValidUrlKeyFound:
+            st.error('Invalid URL')
+            return None
+
+        # display the dataframe
+        st.write(df)
+        return df
+
 
 def main():
     """
@@ -36,10 +105,10 @@ def main():
     
     # conditional statement
     if (status == 'Google Sheets'):
-        df = google_sheet()
+        df = CSV_from_google_sheet()
 
     else:
-        df = upload_csv()
+        df = upload_csv_from_device()
 
     # Check if the DataFrame is not empty
     if df is not None and not df.empty:
@@ -49,32 +118,36 @@ def main():
         # The collected data will be based on the entities specified in the first row of the CSV file, excluding the 'Links' column.
         user_prompt = st.text_input("Enter the Prompt")
         if st.button('Submit'):
-            print(user_prompt)
+            # TODO: Show progress bar or mesage of progress
+            # TODO: Error management
+            # Check if the DataFrame contains a 'Links' column
 
-        # TODO: Error management
-        # Check if the DataFrame contains a 'Links' column
-
-        if 'Links' not in df.columns:
-            st.error('The CSV file does not contain a column named "Links"')
-            return
-        
-        links = df['Links'].tolist()
-
-        # Scrape the links
-        for link in links:
-            try:
-
-                html = scrape(link)
-
-            except WebDriverException:
-                st.error('Invalid URL found in the CSV file. Please check the URLs and try again.')
-
+            if 'Links' not in df.columns:
+                st.error('The CSV file does not contain a column named "Links"')
                 return
-            print('successfully scraped')
-    
-            text = extract_text_from_html(html)
-            entity = get_entity_from_ollama(text, df.columns[1:].to_list(), user_prompt)
-            st.write(entity)
+        
+            links = df['Links'].tolist()
+
+            # Scrape the links
+            for link in links:
+                try:
+
+                    html = scrape(link)
+
+                except WebDriverException:
+                    st.error(f'Invalid URL({link}) found in the CSV file. Please check the URLs and try again.')
+
+                    return
+                print(f'successfully scraped from {link}')
+        
+                text = extract_text_from_html(html)
+                
+                print(f'successfully extracted\n{text[:200]}')
+
+                entity = get_entity_from_ollama(text, df.columns[1:].to_list(), user_prompt)
+                print('successfully AI generated')
+                print(entity)
+                st.write(entity)
 
 
 
