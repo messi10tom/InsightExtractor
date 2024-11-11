@@ -1,35 +1,46 @@
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain.docstore.document import Document
-from langchain_core.runnables import RunnablePassthrough
-from langchain_chroma import Chroma
+# from langchain_core.runnables import RunnablePassthrough
+from langchain_core.vectorstores import InMemoryVectorStore
+# from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 # Create a template string
-template = """You are provided with the following web-scraped text data:
+template = """
+You are provided with the following web-scraped text data:
 
 {WEB_DATA}
 
-The user is interested in extracting specific data entities from the above text. The data entities to be extracted are:
+Extract the following data entities from the text:
 
 {DATA_ENTITY}
 
-The user has provided the following prompt to explain what they want in more detail:
+User's prompt for more details:
 
 {USER_PROMPT}
 
-Based on the user's prompt and the provided web-scraped text data, extract the relevant data entities and present them in the following JSON format:
-
+Example:
+WEB_DATA: Alex Thompson is a dedicated professional at Innovatech Corp, reachable via alex.thompson@example.com.
+Jamie Reed, a key contributor at Synergy Solutions, can be contacted at jamie.reed@example.com.
+Taylor Morgan brings innovation to Quantum Dynamics, and is accessible through taylor.morgan@example.com.
+Jordan Lee is an integral part of Vertex Ventures and can be reached at jordan.lee@example.com.
+Casey Walker works at Stellar Innovations, with an email contact of casey.walker@example.com.
+DATA_ENTITY: name, email, company
+USER_PROMPT: Extract the names, emails, and companies of the professionals mentioned in the website.
+OUTPUT:
 [
-    {{"name": "data entity 1", "value": "extracted value 1"}},
-    {{"name": "data entity 2", "value": "extracted value 2"}},
-    ...
+    {{"name": "Alex Thompson", "email": "alex.thompson@example.com", "company": "Innovatech Corp"}},
+    {{"name": "Jamie Reed", "email": "jamie.reed@example.com", "company": "Synergy Solutions"}},
+    {{"name": "Taylor Morgan", "email": "taylor.morgan@example.com", "company": "Quantum Dynamics"}},
+    {{"name": "Jordan Lee", "email": "jordan.lee@example.com", "company": "Vertex Ventures"}},
+    {{"name": "Casey Walker", "email": "casey.walker@example.com", "company": "Stellar Innovations"}}
 ]
 
-Please ensure that the extracted values are accurate and relevant to the user's prompt.
+Ensure the extracted values are accurate and relevant to the user's prompt.
 """
 
 
@@ -48,7 +59,9 @@ def get_entity_from_ollama(web_data: str,
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(context)
-    vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+    vectorstore = InMemoryVectorStore(embeddings)
+    vectorstore.add_documents(documents=splits)
+    # vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
 
     # Retrieve and generate using the relevant snippets of the web data.
     retriever = vectorstore.as_retriever()
@@ -82,5 +95,3 @@ def get_entity_from_ollama(web_data: str,
 def formated_output(output: str) -> str:
     
     return output
-
-
