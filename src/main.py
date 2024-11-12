@@ -8,6 +8,7 @@
 
 import streamlit as st
 import pandas as pd
+from io import StringIO
 from utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
 from llm.engine import get_entity_from_ollama
@@ -51,8 +52,6 @@ def upload_csv_from_device() -> pd.DataFrame:
     return None
 
 
-
-
 def CSV_from_google_sheet() -> pd.DataFrame:
     
     # TODO: Multiple pages in google sheets
@@ -74,6 +73,13 @@ def CSV_from_google_sheet() -> pd.DataFrame:
         # display the dataframe
         st.write(df)
         return df
+
+# Helper function to convert LLM output to a structured Dictionary
+def LLM_out_to_dict(output: str) -> pd.DataFrame:
+    out = pd.DataFrame(output)
+    out = out.to_dict(orient='list')
+    LLM_gen_entities = out.keys()
+    return out, LLM_gen_entities
 
 
 def main():
@@ -120,6 +126,7 @@ def main():
         if st.button('Submit'):
             # TODO: Show progress bar or mesage of progress
             # TODO: Error management
+            # TODO: Add a radio to select different models
             # Check if the DataFrame contains a 'Links' column
 
             if 'Links' not in df.columns:
@@ -129,7 +136,7 @@ def main():
             links = df['Links'].tolist()
 
             # Scrape the links
-            for link in links:
+            for idx, link in enumerate(links):
                 try:
 
                     html = scrape(link)
@@ -145,9 +152,39 @@ def main():
                 print(f'successfully extracted\n{text[:200]}')
 
                 entity = get_entity_from_ollama(text, df.columns[1:].to_list(), user_prompt)
-                print('successfully AI generated')
+                if entity is None:
+                    st.error('Error in AI generation')
+                    return
+                else:
+                    print('successfully AI generated')
                 print(entity)
-                st.write(entity)
+                # Convert the LLM output to a structured dictionary
+                entity, LLM_gen_entities = LLM_out_to_dict(entity)
+
+                for key in LLM_gen_entities:
+
+                    # Check if the column exists, if not, create it
+                    if key not in df.columns:
+                        df[key] = None
+
+                    # Update a cell in the new column
+                    df.at[idx, key] = '\n'.join(entity[key])
+
+            # Display the updated DataFrame
+            st.write("Updated DataFrame")
+            st.write(df)
+            # Save the updated DataFrame to a CSV file
+            # Convert DataFrame to CSV
+            csv = df.to_csv(index=False)
+            csv_bytes = StringIO(csv).getvalue().encode('utf-8')
+
+            # Download button
+            st.download_button(
+                label="Download CSV",
+                data=csv_bytes,
+                file_name='output.csv',
+                mime='text/csv',
+            )
 
 
 

@@ -1,10 +1,12 @@
+import re
+import ast
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain.docstore.document import Document
 # from langchain_core.runnables import RunnablePassthrough
 from langchain_core.vectorstores import InMemoryVectorStore
 # from langchain_chroma import Chroma
-from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -23,7 +25,7 @@ User's prompt for more details:
 
 {USER_PROMPT}
 
-Example:
+**Example for illustration only (do not include this in the output):**
 WEB_DATA: Alex Thompson is a dedicated professional at Innovatech Corp, reachable via alex.thompson@example.com.
 Jamie Reed, a key contributor at Synergy Solutions, can be contacted at jamie.reed@example.com.
 Taylor Morgan brings innovation to Quantum Dynamics, and is accessible through taylor.morgan@example.com.
@@ -31,7 +33,7 @@ Jordan Lee is an integral part of Vertex Ventures and can be reached at jordan.l
 Casey Walker works at Stellar Innovations, with an email contact of casey.walker@example.com.
 DATA_ENTITY: name, email, company
 USER_PROMPT: Extract the names, emails, and companies of the professionals mentioned in the website.
-OUTPUT:
+**Expected output (do not copy this directly):**
 [
     {{"name": "Alex Thompson", "email": "alex.thompson@example.com", "company": "Innovatech Corp"}},
     {{"name": "Jamie Reed", "email": "jamie.reed@example.com", "company": "Synergy Solutions"}},
@@ -40,7 +42,8 @@ OUTPUT:
     {{"name": "Casey Walker", "email": "casey.walker@example.com", "company": "Stellar Innovations"}}
 ]
 
-Ensure the extracted values are accurate and relevant to the user's prompt.
+**Note:** The example is only to guide the format. Do not include any part of the example in your response. Generate the output based only on the {WEB_DATA} provided.
+
 """
 
 
@@ -85,13 +88,18 @@ def get_entity_from_ollama(web_data: str,
     }
     | prompt
     | model
-    | StrOutputParser())
+    | format_output)
     
     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
                              "DATA_ENTITY": data_entity, 
                              "USER_PROMPT": user_prompt})
 
-    
-def formated_output(output: str) -> str:
-    
-    return output
+def format_output(output: str) -> list:
+    # Extract the JSON-like list from the output string
+    match = re.search(r'\[.*\]', output, re.DOTALL)
+    if match:
+        extracted_data = match.group(0)
+        # Convert the string to a list of dictionaries
+        return ast.literal_eval(extracted_data)
+    return 
+
