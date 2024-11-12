@@ -11,7 +11,7 @@ import pandas as pd
 from io import StringIO
 from utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
-from llm.engine import get_entity_from_ollama
+from llm.engine import get_entity_from_ollama, preprocess_df_for_llm
 from selenium.common.exceptions import WebDriverException
 from scraper.webscraper import scrape, extract_text_from_html
 
@@ -55,6 +55,7 @@ def upload_csv_from_device() -> pd.DataFrame:
 def CSV_from_google_sheet() -> pd.DataFrame:
     
     # TODO: Multiple pages in google sheets
+    # TODO: Update current Google Sheet using the Google Sheets API
 
     # get the link of the google sheet
     link = st.text_input("Enter the link of the google sheet")
@@ -124,10 +125,18 @@ def main():
         # The collected data will be based on the entities specified in the first row of the CSV file, excluding the 'Links' column.
         user_prompt = st.text_input("Enter the Prompt")
         if st.button('Submit'):
-            # TODO: Show progress bar or mesage of progress
             # TODO: Error management
             # TODO: Add a radio to select different models
             # Check if the DataFrame contains a 'Links' column
+
+            # Create a placeholder for progress messages
+
+            # | Links        | company   |
+            # |--------------|-----------|
+            # | example1.com | company_1 |
+            # | example2.com | company_2 |
+
+            progress_placeholder = st.empty()
 
             if 'Links' not in df.columns:
                 st.error('The CSV file does not contain a column named "Links"')
@@ -139,6 +148,7 @@ def main():
             for idx, link in enumerate(links):
                 try:
 
+                    progress_placeholder.text(f'Submitting file and scraping URL {idx + 1}/{len(links)}...')
                     html = scrape(link)
 
                 except WebDriverException:
@@ -146,18 +156,37 @@ def main():
 
                     return
                 print(f'successfully scraped from {link}')
-        
+
+            
                 text = extract_text_from_html(html)
                 
                 print(f'successfully extracted\n{text[:200]}')
 
-                entity = get_entity_from_ollama(text, df.columns[1:].to_list(), user_prompt)
+                # Get the data from csv file (header + idx row)
+                # |    Links        |   company   |
+                # |-----------------|-------------|
+                # | example_idx.com | company_idx |
+                # |-----------------|-------------|
+                #                   |
+                #                   |
+                #                   v
+                # Links company example_idx.com company_idx
+              
+
+                csv_data = pd.concat([df.head(0), df.iloc[[idx]]])
+                csv_data = preprocess_df_for_llm(csv_data)
+                progress_placeholder.text('Sending text to LLM...')
+                
+                # get_entity_from_ollama(web_data: str, data_entity: list, user_prompt: str) -> str:
+                entity = get_entity_from_ollama(text, csv_data, user_prompt)
                 if entity is None:
-                    st.error('Error in AI generation')
+                    st.error('Error in AI generation. Please try again.')
                     return
                 else:
                     print('successfully AI generated')
                 print(entity)
+
+
                 # Convert the LLM output to a structured dictionary
                 entity, LLM_gen_entities = LLM_out_to_dict(entity)
 
@@ -168,11 +197,14 @@ def main():
                         df[key] = None
 
                     # Update a cell in the new column
-                    df.at[idx, key] = '\n'.join(entity[key])
+                    df.at[idx, key] = '\n'.join(entity[key]) 
 
             # Display the updated DataFrame
             st.write("Updated DataFrame")
             st.write(df)
+
+            progress_placeholder.text('Process completed successfully.')
+
             # Save the updated DataFrame to a CSV file
             # Convert DataFrame to CSV
             csv = df.to_csv(index=False)

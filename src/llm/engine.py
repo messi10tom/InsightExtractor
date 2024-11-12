@@ -13,37 +13,30 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Create a template string
 template = """
-You are provided with the following web-scraped text data:
+You are an intelligent assistant helping to process web-scraped data in response to a user’s query.
 
-{WEB_DATA}
+**Input Data:**
+- **WEB_DATA**: {WEB_DATA}
+- **CSV_DATA**: {CSV_DATA}
+- **USER_PROMPT**: {USER_PROMPT}
 
-Extract the following data entities from the text:
+**Task**:
+- Only extract the information the user specifically requested in the **USER_PROMPT**.
+- Ensure the response data includes only information present in **WEB_DATA** and **CSV_DATA**.
+- Format the output in JSON for easy processing.
+- Exclude any data not explicitly mentioned in the **CSV_DATA** or **WEB_DATA**.
 
-{DATA_ENTITY}
-
-User's prompt for more details:
-
-{USER_PROMPT}
-
-**Example for illustration only (do not include this in the output):**
-WEB_DATA: Alex Thompson is a dedicated professional at Innovatech Corp, reachable via alex.thompson@example.com.
-Jamie Reed, a key contributor at Synergy Solutions, can be contacted at jamie.reed@example.com.
-Taylor Morgan brings innovation to Quantum Dynamics, and is accessible through taylor.morgan@example.com.
-Jordan Lee is an integral part of Vertex Ventures and can be reached at jordan.lee@example.com.
-Casey Walker works at Stellar Innovations, with an email contact of casey.walker@example.com.
-DATA_ENTITY: name, email, company
-USER_PROMPT: Extract the names, emails, and companies of the professionals mentioned in the website.
-**Expected output (do not copy this directly):**
-[
-    {{"name": "Alex Thompson", "email": "alex.thompson@example.com", "company": "Innovatech Corp"}},
-    {{"name": "Jamie Reed", "email": "jamie.reed@example.com", "company": "Synergy Solutions"}},
-    {{"name": "Taylor Morgan", "email": "taylor.morgan@example.com", "company": "Quantum Dynamics"}},
-    {{"name": "Jordan Lee", "email": "jordan.lee@example.com", "company": "Vertex Ventures"}},
-    {{"name": "Casey Walker", "email": "casey.walker@example.com", "company": "Stellar Innovations"}}
-]
-
-**Note:** The example is only to guide the format. Do not include any part of the example in your response. Generate the output based only on the {WEB_DATA} provided.
-
+**Output Example**:
+```json
+{{
+  "result": [
+    {{ "name": "Alex Thompson", "company": "Innovatech Corp", "email": "alex.thompson@example.com" }},
+    {{ "name": "Jamie Reed", "company": "Synergy Solutions", "email": "jamie.reed@example.com" }},
+    {{ "name": "Taylor Morgan", "company": "Quantum Dynamics", "email": "taylor.morgan@example.com" }},
+    {{ "name": "Jordan Lee", "company": "Vertex Ventures", "email": "jordan.lee@example.com" }},
+    {{ "name": "Casey Walker", "company": "Stellar Innovations", "email": "casey.walker@example.com" }}
+  ]
+}}
 """
 
 
@@ -52,7 +45,7 @@ id = "llama3.2:1b"
 # TODO: implement placeholder for users to add
 
 def get_entity_from_ollama(web_data: str, 
-                           data_entity: list, 
+                           csv_data: str, 
                            user_prompt: str) -> str:
 
 
@@ -73,8 +66,6 @@ def get_entity_from_ollama(web_data: str,
     # Combine retrieved documents into a single string
     retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
 
-    # Format the data_entity list into a string
-    data_entity = "\n".join(data_entity)
     # Create a template 
     prompt = ChatPromptTemplate.from_template(template)
     print("prompt created")
@@ -83,7 +74,7 @@ def get_entity_from_ollama(web_data: str,
     rag_chain = (
     {
             "WEB_DATA": lambda x: x,  
-            "DATA_ENTITY": lambda x: x,  # Join data entities as a string
+            "CSV_DATA": lambda x: x,  # Join data entities as a string
             "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
     }
     | prompt
@@ -91,7 +82,7 @@ def get_entity_from_ollama(web_data: str,
     | format_output)
     
     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
-                             "DATA_ENTITY": data_entity, 
+                             "CSV_DATA": csv_data, 
                              "USER_PROMPT": user_prompt})
 
 def format_output(output: str) -> list:
@@ -102,4 +93,19 @@ def format_output(output: str) -> list:
         # Convert the string to a list of dictionaries
         return ast.literal_eval(extracted_data)
     return 
+
+def preprocess_df_for_llm(df):
+  """Preprocesses a Pandas DataFrame for LLM input.
+
+  Args:
+    df: The Pandas DataFrame to preprocess.
+
+  Returns:
+    A string representation of the DataFrame suitable for LLM input.
+  """
+
+  # Convert DataFrame to string without index
+  df_string = df.to_string(index=False)
+
+  return df_string
 
