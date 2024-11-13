@@ -1,5 +1,11 @@
+import os
+from dotenv import load_dotenv
+
 import gspread
 from google.oauth2.service_account import Credentials
+
+load_dotenv()
+CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 def get_google_sheet(link: str):
     """
@@ -14,7 +20,7 @@ def get_google_sheet(link: str):
 
     scope = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
+    creds = Credentials.from_service_account_file(CREDENTIALS, scopes=scope)
     client = gspread.authorize(creds)
     
     sheet = client.open_by_url(link).sheet1
