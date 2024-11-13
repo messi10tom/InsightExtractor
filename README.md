@@ -33,49 +33,21 @@ To install InsightExtractor, follow these steps:
     
     ```env
     - **Create BD_AUTH Token**:
-        1. **Visit Bright Data**:
-            - Go to [Bright Data](https://brightdata.com/).
-        2. **Access the Dashboard**:
-            - In the dashboard, choose "Scraping Browser" from the "Add" dropdown menu.
-        3. **Name Your Scraping Browser**:
-            - Name your scraping browser something like "InsightExtractor".
-        4. **Create the Scraping Browser**:
-            - Click the "Add" button to create the Scraping Browser.
-        5. **Navigate to Playground**:
-            - In your Scraping Browser, go to "Playground".
-        6. **Toggle to Code Examples**:
-            - Toggle "Playground" to "Code Examples".
-        7. **Select Python, Selenium**:
-            - In the "Run example script" snippet, choose "Python, Selenium".
-        8. **Copy the AUTH Key**:
-            - Copy the AUTH key provided in the example script.
-        9. **Update .env File**:
-            - Paste the AUTH key into the `BD_AUTH` field in your `.env` file.
+        - Visit [Bright Data](https://brightdata.com/) and access the dashboard.
+        - Choose "Scraping Browser" from the "Add" dropdown menu.
+        - Name your scraping browser (e.g., "InsightExtractor") and create it.
+        - Go to "Playground" in your Scraping Browser and toggle to "Code Examples".
+        - Select "Python, Selenium" and copy the AUTH key from the example script.
+        - Paste the AUTH key into the `BD_AUTH` field in your `.env` file.
+
     - **Create Google Application Credentials**:
-        1. **Visit Google Cloud Console**:
-            - Go to [Google Cloud Console](https://console.cloud.google.com/).
-        2. **Select Google Account**:
-            - Choose the appropriate Google account.
-        3. **Create a Project**:
-            - In the top menu, select the project list and create a new project.
-        4. **Select the Project**:
-            - Choose the newly created project.
-        5. **Navigate to API & Services**:
-            - Search for "API & Services" and select "Enabled API & Services".
-        6. **Enable Google Sheets API**:
-            - Click on "ENABLED API & SERVICES" and search for Google Sheets API.
-        7. **Create Credentials**:
-            - Click on "Create Credentials" and fill out the required forms.
-        8. **Set Service Account Role**:
-            - While filling out "Grant this service account access to projects", set the role to Editor.
-        9. **Generate JSON Key**:
-            - Go to "Credentials", then "Keys", and select "ADD KEYS".
-            - Choose "Create New Key" and select "JSON".
-        10. **Download and Move Key**:
-            - Download the JSON key file and move it to the project directory.
-        11. **Update .env File**:
-            - Copy the file path and paste it into the `GOOGLE_APPLICATION_CREDENTIALS` field in your `.env` file.
-            
+        - Visit [Google Cloud Console](https://console.cloud.google.com/) and select your Google account.
+        - Create and select a new project.
+        - Navigate to "API & Services" and enable the Google Sheets API.
+        - Create credentials, set the service account role to Editor, and generate a JSON key.
+        - Download the JSON key file and move it to the project directory.
+        - Copy the file path and paste it into the `GOOGLE_APPLICATION_CREDENTIALS` field in your `.env` file.
+
     BD_AUTH=your_auth_details
     GOOGLE_APPLICATION_CREDENTIALS=path/to/your/credentials.json
     ```
