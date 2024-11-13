@@ -3,7 +3,7 @@ IE/
 
 # Ignore the credentials file
 credentials.json
-.env
+test.env
 
 # Ignore compiled Python files
 src/utils/__pycache__/

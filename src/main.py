@@ -169,7 +169,12 @@ def main():
                 except WebDriverException as e:
                     if "Account is suspended" in str(e):
                         st.error('Your https://brightdata.com/ service over.')
+
+                    elif "Message: Zone not found" in str(e):
+                        st.error('Please provide Bright Data Zone ID in the .env file.')
+
                     else:
+                        print(e)
                         st.error(f'Invalid URL({link}) found in the CSV file. Please check the URLs and try again.')
 
                     return

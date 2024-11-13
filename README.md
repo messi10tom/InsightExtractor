@@ -1,5 +1,10 @@
 # InsightExtractor
-
+[![GitHub issues](https://img.shields.io/github/issues/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/issues)
+[![GitHub forks](https://img.shields.io/github/forks/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/network)
+[![GitHub stars](https://img.shields.io/github/stars/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/stargazers)
+[![GitHub license](https://img.shields.io/github/license/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/blob/main/LICENSE)
+[![GitHub contributors](https://img.shields.io/github/contributors/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/graphs/contributors)
+[![GitHub last commit](https://img.shields.io/github/last-commit/messi10tom/InsightExtractor)](https://github.com/messi10tom/InsightExtractor/commits/main)
 ![InsightExtractor Banner](./doc/banner.png)
 
 InsightExtractor is an AI-powered tool for automated data retrieval. Connect CSVs or Google Sheets, define queries, and extract structured insights via web search and LLMs. Features include customizable prompts, API integration, and an intuitive dashboard for data export.
@@ -29,24 +34,23 @@ To install InsightExtractor, follow these steps:
     ```
 
 3. **Set Up Environment Variables**:
-    - Create a `.env` file in the root directory and add your credentials:
+    - **Create BD_AUTH Token**:
+    - Visit [Bright Data](https://brightdata.com/) and access the dashboard.
+    - Choose "Scraping Browser" from the "Add" dropdown menu.
+    - Name your scraping browser (e.g., "InsightExtractor") and create it.
+    - Go to "Playground" in your Scraping Browser and toggle to "Code Examples".
+    - Select "Python, Selenium" and copy the AUTH key from the example script.
+    - Paste the AUTH key into the `BD_AUTH` field in your `.env` file.
+
+- **Create Google Application Credentials**:
+    - Visit [Google Cloud Console](https://console.cloud.google.com/) and select your Google account.
+    - Create and select a new project.
+    - Navigate to "API & Services" and enable the Google Sheets API.
+    - Create credentials, set the service account role to Editor, and generate a JSON key.
+    - Download the JSON key file and move it to the project directory.
+    - Copy the file path and paste it into the `GOOGLE_APPLICATION_CREDENTIALS` field in your `.env` file.
     
     ```env
-    - **Create BD_AUTH Token**:
-        - Visit [Bright Data](https://brightdata.com/) and access the dashboard.
-        - Choose "Scraping Browser" from the "Add" dropdown menu.
-        - Name your scraping browser (e.g., "InsightExtractor") and create it.
-        - Go to "Playground" in your Scraping Browser and toggle to "Code Examples".
-        - Select "Python, Selenium" and copy the AUTH key from the example script.
-        - Paste the AUTH key into the `BD_AUTH` field in your `.env` file.
-
-    - **Create Google Application Credentials**:
-        - Visit [Google Cloud Console](https://console.cloud.google.com/) and select your Google account.
-        - Create and select a new project.
-        - Navigate to "API & Services" and enable the Google Sheets API.
-        - Create credentials, set the service account role to Editor, and generate a JSON key.
-        - Download the JSON key file and move it to the project directory.
-        - Copy the file path and paste it into the `GOOGLE_APPLICATION_CREDENTIALS` field in your `.env` file.
 
     BD_AUTH=your_auth_details
     GOOGLE_APPLICATION_CREDENTIALS=path/to/your/credentials.json
@@ -85,9 +89,8 @@ Here is an example of how to use InsightExtractor:
 
 2. **User Prompt**:
     ```
-    Extract the names, emails, and companies of the professionals mentioned in the text.
+    Extract the names, emails, and companies of the professionals mentioned in the text {professional}.
     ```
-  ```
 
 ## Contributing
 
