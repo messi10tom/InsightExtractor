@@ -13,6 +13,7 @@ from utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
 from llm.engine import get_entity_from_ollama, preprocess_df_for_llm
 from selenium.common.exceptions import WebDriverException
+from urllib3.exceptions import ProtocolError
 from scraper.webscraper import scrape, extract_text_from_html
 
 
@@ -123,6 +124,10 @@ def main():
         # This prompt will be used to perform a similarity search and RAG (Retrieval-Augmented Generation) pipeline
         # to collect relevant data from the scraped content.
         # The collected data will be based on the entities specified in the first row of the CSV file, excluding the 'Links' column.
+        st.write('You can use placeholders to specify the entities you want to collect from the websites.')
+        st.write('For example, "I want to collect {company} information from the website."')
+        st.write('The placeholders should match the data entities in the first row of the CSV file.')
+        st.write('{company} will be replaced by company information from the CSV file.')
         user_prompt = st.text_input("Enter the Prompt")
         if st.button('Submit'):
             # TODO: Error management
@@ -144,17 +149,32 @@ def main():
         
             links = df['Links'].tolist()
 
+            # Create a new column to store the formatted text
+            # Helper function: create placeholder for user to enter
+            def replace_placeholders(row, template):
+                return template.format(**row)
+
+            # Apply the function to each row in the DataFrame
+            df['formatted'] = df.apply(lambda row: replace_placeholders(row, user_prompt), axis=1)
+            formatted_user_prompt = df['formatted'].tolist()
+
             # Scrape the links
-            for idx, link in enumerate(links):
+            for idx, (link, prompt) in enumerate(zip(links, formatted_user_prompt)):
                 try:
 
-                    progress_placeholder.text(f'Submitting file and scraping URL {idx + 1}/{len(links)}...')
+                    progress_placeholder.text(f'Submitting file and scraping URL {link}')
+                    print(f'\033[91mscraping from {link}\033[0m')
                     html = scrape(link)
 
-                except WebDriverException:
-                    st.error(f'Invalid URL({link}) found in the CSV file. Please check the URLs and try again.')
+                except WebDriverException as e:
+                    if "Account is suspended" in str(e):
+                        st.error('Your https://brightdata.com/ service over.')
+                    else:
+                        st.error(f'Invalid URL({link}) found in the CSV file. Please check the URLs and try again.')
 
                     return
+                except ProtocolError:
+                    st.error("Network error. Please try later...")
                 print(f'successfully scraped from {link}')
 
             
@@ -178,7 +198,15 @@ def main():
                 progress_placeholder.text('Sending text to LLM...')
                 
                 # get_entity_from_ollama(web_data: str, data_entity: list, user_prompt: str) -> str:
-                entity = get_entity_from_ollama(text, csv_data, user_prompt)
+                try:
+
+                    entity = get_entity_from_ollama(text, csv_data, prompt)
+
+                except SyntaxError:
+                    #  SyntaxError: invalid syntax 
+                    st.error('Error in AI generation. Please try again.')
+                    return
+                
                 if entity is None:
                     st.error('Error in AI generation. Please try again.')
                     return
@@ -200,6 +228,7 @@ def main():
                     df.at[idx, key] = '\n'.join(entity[key]) 
 
             # Display the updated DataFrame
+            df.drop(columns=['formatted'], inplace=True)
             st.write("Updated DataFrame")
             st.write(df)
 

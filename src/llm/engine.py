@@ -30,11 +30,8 @@ You are an intelligent assistant helping to process web-scraped data in response
 ```json
 {{
   "result": [
-    {{ "name": "Alex Thompson", "company": "Innovatech Corp", "email": "alex.thompson@example.com" }},
-    {{ "name": "Jamie Reed", "company": "Synergy Solutions", "email": "jamie.reed@example.com" }},
-    {{ "name": "Taylor Morgan", "company": "Quantum Dynamics", "email": "taylor.morgan@example.com" }},
-    {{ "name": "Jordan Lee", "company": "Vertex Ventures", "email": "jordan.lee@example.com" }},
-    {{ "name": "Casey Walker", "company": "Stellar Innovations", "email": "casey.walker@example.com" }}
+    {{ "name": "name from WEB_DATA", "company": "company from WEB_DATA", "email": "email from WEB_DATA" }},
+    {{ "name": "name from WEB_DATA", "company": "company from WEB_DATA", "email": "email from WEB_DATA" }}
   ]
 }}
 """
