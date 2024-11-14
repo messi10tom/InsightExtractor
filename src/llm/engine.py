@@ -1,4 +1,6 @@
 import re
+from dotenv import load_dotenv
+# import openai
 import ast
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
@@ -7,9 +9,14 @@ from langchain.docstore.document import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 # from langchain_chroma import Chroma
 # from langchain_core.output_parsers import StrOutputParser
+# from langchain.embeddings import GooglePalmEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAI
+# from langchain.chat_models import GooglePalm
 
+load_dotenv()
 
 # Create a template string
 template = """
@@ -65,7 +72,7 @@ def get_entity_from_ollama(web_data: str,
 
     # Create a template 
     prompt = ChatPromptTemplate.from_template(template)
-    print("prompt created")
+    print("\n\nprompt created:\n\n")
     print(prompt)
     
     rag_chain = (
@@ -82,12 +89,60 @@ def get_entity_from_ollama(web_data: str,
                              "CSV_DATA": csv_data, 
                              "USER_PROMPT": user_prompt})
 
+def get_entity_chatgpt(web_data: str, csv_data: str, user_prompt: str) -> str:
+
+
+    model = OpenAI()
+    embeddings = OpenAIEmbeddings(
+    model="text-embedding-3-large",
+    # With the `text-embedding-3` class
+    # of models, you can specify the size
+    # of the embeddings you want returned.
+    # dimensions=1024
+    )
+
+    # Create embeddings for the web data
+    context = [Document(page_content=web_data)]
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    splits = text_splitter.split_documents(context)
+    vectorstore = InMemoryVectorStore(embeddings)
+    vectorstore.add_documents(documents=splits)
+
+    # Retrieve and generate using the relevant snippets of the web data.
+    retriever = vectorstore.as_retriever()
+    retrieved_docs = retriever.get_relevant_documents(user_prompt)
+ 
+    # Combine retrieved documents into a single string
+    retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
+
+    # Create a template 
+    prompt = ChatPromptTemplate.from_template(template)
+    print("\n\nprompt created\n\n")
+    print(prompt)
+    
+    rag_chain = (
+    {
+            "WEB_DATA": lambda x: x,  
+            "CSV_DATA": lambda x: x,  # Join data entities as a string
+            "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
+    }
+    | prompt
+    | model
+    | format_output)
+    
+    return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
+                             "CSV_DATA": csv_data, 
+                             "USER_PROMPT": user_prompt})
+
+
 def format_output(output: str) -> list:
     # Extract the JSON-like list from the output string
     match = re.search(r'\[.*\]', output, re.DOTALL)
+    print('\n\nmatch:\n\n', match)
     if match:
         extracted_data = match.group(0)
         # Convert the string to a list of dictionaries
+        print('\nextracted data:\n\n', extracted_data)
         return ast.literal_eval(extracted_data)
     return 
 
@@ -106,3 +161,44 @@ def preprocess_df_for_llm(df):
 
   return df_string
 
+
+# def get_entity_from_gemini(web_data: str, 
+#                            csv_data: str, 
+#                            user_prompt: str) -> str:
+
+
+#     embeddings = GooglePalmEmbeddings(model="models/embedding-gecko-001")
+#     model = GooglePalm(model="models/chat-bison-001")
+#     context = [Document(page_content=web_data)]
+
+#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+#     splits = text_splitter.split_documents(context)
+#     vectorstore = InMemoryVectorStore(embeddings)
+#     vectorstore.add_documents(documents=splits)
+#     # vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+
+#     # Retrieve and generate using the relevant snippets of the web data.
+#     retriever = vectorstore.as_retriever()
+#     retrieved_docs = retriever.get_relevant_documents(user_prompt)
+ 
+#     # Combine retrieved documents into a single string
+#     retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
+
+#     # Create a template 
+#     prompt = ChatPromptTemplate.from_template(template)
+#     print("prompt created")
+#     print(prompt)
+    
+#     rag_chain = (
+#     {
+#             "WEB_DATA": lambda x: x,  
+#             "CSV_DATA": lambda x: x,  # Join data entities as a string
+#             "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
+#     }
+#     | prompt
+#     | model
+#     | format_output)
+    
+#     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
+#                              "CSV_DATA": csv_data, 
+#                              "USER_PROMPT": user_prompt})

@@ -11,7 +11,9 @@ import pandas as pd
 from io import StringIO
 from utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
-from llm.engine import get_entity_from_ollama, preprocess_df_for_llm
+from llm.engine import (get_entity_from_ollama, 
+                        preprocess_df_for_llm, 
+                        get_entity_chatgpt)
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
 from scraper.webscraper import scrape, extract_text_from_html
@@ -108,6 +110,8 @@ def main():
     st.write("Ensure your CSV file has a 'Links' column with the URLs to scrape.")
     st.write('First row contains only "Links" and data entities that you want to scrape.')
 
+    model = st.radio("Select the model", ('ChatGPT', 'Ollama'))
+
     # Get the user's choice for uploading the CSV file(Google Sheets or Upload CSV File)
     status = st.radio("How would you like to upload the CSV file?", ('Google Sheets', 'Upload CSV File'))
     
@@ -168,69 +172,108 @@ def main():
 
                 except WebDriverException as e:
                     if "Account is suspended" in str(e):
-                        st.error('Your https://brightdata.com/ service over.')
+                        st.write('Your https://brightdata.com/ service over.')
 
                     elif "Message: Zone not found" in str(e):
-                        st.error('Please provide Bright Data Zone ID in the .env file.')
+                        st.write('Please provide Bright Data Zone ID in the .env file.')
 
                     else:
                         print(e)
-                        st.error(f'Invalid URL({link}) found in the CSV file. Please check the URLs and try again.')
+                        st.write(f'Invalid URL({link}) found in the CSV file. Please check the URLs.')
 
-                    return
-                except ProtocolError:
-                    st.error("Network error. Please try later...")
-                print(f'successfully scraped from {link}')
+                    html = [str(e)]
+                except ProtocolError  as e:
 
-            
-                text = extract_text_from_html(html)
+                    st.write(f"Network error({link}). Please try later...")
+
+                    html = [str(e)]
                 
-                print(f'successfully extracted\n{text[:200]}')
+                except Exception as e:
 
-                # Get the data from csv file (header + idx row)
-                # |    Links        |   company   |
-                # |-----------------|-------------|
-                # | example_idx.com | company_idx |
-                # |-----------------|-------------|
-                #                   |
-                #                   |
-                #                   v
-                # Links company example_idx.com company_idx
-              
-
-                csv_data = pd.concat([df.head(0), df.iloc[[idx]]])
-                csv_data = preprocess_df_for_llm(csv_data)
-                progress_placeholder.text('Sending text to LLM...')
+                    print(f'Error: {e}.')
+                    html = [str(e)]
                 
-                # get_entity_from_ollama(web_data: str, data_entity: list, user_prompt: str) -> str:
-                try:
+                if type(html) is not list:
+                    
+                    print(f'successfully scraped from {link}')
 
-                    entity = get_entity_from_ollama(text, csv_data, prompt)
+                    text = extract_text_from_html(html)
+                    print(f'successfully extracted\n{text[:200]}')
 
-                except SyntaxError:
-                    #  SyntaxError: invalid syntax 
-                    st.error('Error in AI generation. Please try again.')
-                    return
-                
-                if entity is None:
-                    st.error('Error in AI generation. Please try again.')
-                    return
+                    # Get the data from csv file (header + idx row)
+                    # |    Links        |   company   |
+                    # |-----------------|-------------|
+                    # | example_idx.com | company_idx |
+                    # |-----------------|-------------|
+                    #                   |
+                    #                   |
+                    #                   v
+                    # Links company example_idx.com company_idx
+
+                    csv_data = pd.concat([df.head(0), df.iloc[[idx]]])
+                    csv_data = preprocess_df_for_llm(csv_data)
+                    progress_placeholder.text('Sending text to LLM...')
+
+
+                    # get_entity_from_ollama(web_data: str, data_entity: list, user_prompt: str) -> str:
+                    try:
+                        if model == 'ChatGPT':
+
+                            entity = get_entity_chatgpt(text, csv_data, prompt)
+                        else:
+
+                            entity = get_entity_from_ollama(text, csv_data, prompt)
+
+                        print("\n\nEntity:\n\n", entity)
+
+                    except SyntaxError as e:
+                        #  SyntaxError: invalid syntax 
+                        st.write(f'Error in AI generation({link}).')
+                        entity = str(e)
+                    
+                    except Exception as e:
+
+                        entity = str(e)
+                    
+                    if entity is None:
+
+                        entity = ['Error in AI generation. Please try again.']
+                        progress_placeholder.text(f'Failed AI generation from the URL {link} due to Error in AI generation.')
+                        print(f'Error in scraping {link}. Please check the URL.')
+
+                    elif type(entity) is str:
+
+                        progress_placeholder.text(f'Failed AI generation from the URL {link} due to {entity[0]}')
+                        print(f'Error in scraping {link}. Please check the URL.')
+                        
+                    else:
+                        print('successfully AI generated')
+                        print(entity)
+
+
+                        # Convert the LLM output to a structured dictionary
+                        entity, LLM_gen_entities = LLM_out_to_dict(entity)
+
+                        print("\n\nstructured output:\n\n", LLM_gen_entities)
+
+                        for key in LLM_gen_entities:
+
+                            # Skip the 'Links' column or any user given datas
+                            if key in df.columns and not df[key].isnull().all():
+                                continue
+                            # Check if the column exists, if not, create it
+                            if key not in df.columns:
+                                df[key] = None
+
+                            # Update a cell in the new column
+                            df.at[idx, key] = '\n'.join(entity[key]) 
+
                 else:
-                    print('successfully AI generated')
-                print(entity)
 
-
-                # Convert the LLM output to a structured dictionary
-                entity, LLM_gen_entities = LLM_out_to_dict(entity)
-
-                for key in LLM_gen_entities:
-
-                    # Check if the column exists, if not, create it
-                    if key not in df.columns:
-                        df[key] = None
-
-                    # Update a cell in the new column
-                    df.at[idx, key] = '\n'.join(entity[key]) 
+                    progress_placeholder.text(f'Failed webscraping from the URL {link} due to {html[0]}')
+                    print(f'Error in scraping {link}. Please check the URL.')
+              
+                
 
             # Display the updated DataFrame
             df.drop(columns=['formatted'], inplace=True)

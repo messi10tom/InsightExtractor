@@ -8,6 +8,7 @@ selenium
 python-dotenv
 beautifulsoup4
 langchain-ollama
-langchain-chroma
+langchain-community
 langchain
 langchain-text-splitters
+langchain-openai
