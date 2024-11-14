@@ -134,8 +134,6 @@ def main():
         st.write('{company} will be replaced by company information from the CSV file.')
         user_prompt = st.text_input("Enter the Prompt")
         if st.button('Submit'):
-            # TODO: Error management
-            # TODO: Add a radio to select different models
             # Check if the DataFrame contains a 'Links' column
 
             # Create a placeholder for progress messages
