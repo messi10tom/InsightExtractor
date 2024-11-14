@@ -89,6 +89,7 @@ def LLM_out_to_dict(output: str) -> pd.DataFrame:
     return out, LLM_gen_entities
 
 def Gemini_out_parser(output) -> pd.DataFrame:
+
     output = output.content
     # Extract JSON using regex to remove the markdown formatting
     json_string = re.search(r'```json\n({.*})\n```', output, re.DOTALL).group(1)
@@ -123,7 +124,7 @@ def main():
     st.write("Ensure your CSV file has a 'Links' column with the URLs to scrape.")
     st.write('First row contains only "Links" and data entities that you want to scrape.')
 
-    model = st.radio("Select the model", ('ChatGPT', 'Gemini', 'Ollama'))
+    model = st.radio("Select the model", ('Gemini', 'ChatGPT', 'Ollama'))
 
     # Get the user's choice for uploading the CSV file(Google Sheets or Upload CSV File)
     status = st.radio("How would you like to upload the CSV file?", ('Google Sheets', 'Upload CSV File'))

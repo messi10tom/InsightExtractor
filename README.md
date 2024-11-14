@@ -8,7 +8,15 @@
 ![InsightExtractor Banner](./doc/banner.png)
 
 InsightExtractor is an AI-powered tool for automated data retrieval. Connect CSVs or Google Sheets, define queries, and extract structured insights via web search and LLMs. Features include customizable prompts, API integration, and an intuitive dashboard for data export.
+## Supported Models
 
+InsightExtractor supports multiple AI models for data extraction and processing. Users can choose from the following models:
+
+- **Gemini**
+- **ChatGPT**
+- **Ollama**
+
+Each model offers unique capabilities and can be selected based on the specific requirements of your data extraction tasks.
 ## Features
 
 - **Automated Data Retrieval**: Seamlessly connect CSVs or Google Sheets and extract data.
@@ -34,7 +42,7 @@ To install InsightExtractor, follow these steps:
     ```
 
 3. **Set Up Environment Variables**:
-    - **Create BD_AUTH Token**:
+- **Create BD_AUTH Token**:
     - Visit [Bright Data](https://brightdata.com/) and access the dashboard.
     - Choose "Scraping Browser" from the "Add" dropdown menu.
     - Name your scraping browser (e.g., "InsightExtractor") and create it.
@@ -49,11 +57,44 @@ To install InsightExtractor, follow these steps:
     - Create credentials, set the service account role to Editor, and generate a JSON key.
     - Download the JSON key file and move it to the project directory.
     - Copy the file path and paste it into the `GOOGLE_APPLICATION_CREDENTIALS` field in your `.env` file.
-    
-    ```env
 
-    BD_AUTH=your_auth_details
-    GOOGLE_APPLICATION_CREDENTIALS=path/to/your/credentials.json
+- **Create Google API Key**:
+    - Visit [Google AI Studio](https://aistudio.google.com/welcome) and sign in with your Google account.
+    - Click on the "Get API key".
+    - Click on "Create API Key" to generate a new API key.
+    - Copy the generated API key and paste it into the `GOOGLE_API_KEY` field in your `.env` file.
+
+ - **Setting Up ChatGPT API Key**:
+
+    1. **Create an Account**:
+        - Sign up for a free account on ChatGPT [here](https://chat.openai.com/).
+
+    2. **Generate an API Key**:
+        - Log in, go to "API Keys", click "+ Create new secret key", name your key, and copy the API key.
+
+    3. **Set Up Billing**:
+        - Go to 'Billing', add payment details, choose user type, enter payment info, and configure payment options.
+
+    4. **Set Usage Limits**:
+        - Go to 'Limits', set hard and soft usage caps, and click 'Save'.
+
+    5. **Save API Key in `.env` File**:
+        - Add the following line to your `.env` file:
+            ```env
+            CHATGPT_API_KEY=your_api_key_here
+            ```
+
+- **Set Up Ollama**:
+    - Visit [Ollama GitHub](https://github.com/ollama/ollama) and download the appropriate version for your operating system.
+    - After downloading, open your terminal and run the following command:
+        ```sh
+        ollama run llama3.2
+        ```
+    ```env
+    BD_AUTH=""
+    GOOGLE_APPLICATION_CREDENTIALS="path/to/your/credentials.json"
+    GOOGLE_API_KEY=""
+    OPENAI_API_KEY=""
     ```
 
 4. **Run the Application**:

@@ -12,10 +12,11 @@ from langchain_core.messages.utils import get_buffer_string
 # from langchain_chroma import Chroma
 # from langchain_core.output_parsers import StrOutputParser
 # from langchain.embeddings import GooglePalmEmbeddings
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_openai import OpenAI
 # from langchain.chat_models import GooglePalm
 import google.generativeai as genai
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -50,7 +51,7 @@ You are an intelligent assistant helping to process web-scraped data in response
 """
 
 
-id = "llama3.2:1b"
+id = "llama3.2"
 
 # TODO: implement placeholder for users to add
 
@@ -98,7 +99,7 @@ def get_entity_from_ollama(web_data: str,
 def get_entity_chatgpt(web_data: str, csv_data: str, user_prompt: str) -> str:
 
 
-    model = OpenAI()
+    model = ChatOpenAI(model="gpt-4o-mini")
     embeddings = OpenAIEmbeddings(
     model="text-embedding-3-large",
     # With the `text-embedding-3` class
@@ -134,6 +135,7 @@ def get_entity_chatgpt(web_data: str, csv_data: str, user_prompt: str) -> str:
     }
     | prompt
     | model
+    | StrOutputParser()
     | format_output)
     
     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
