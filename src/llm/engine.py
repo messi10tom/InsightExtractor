@@ -1,4 +1,5 @@
 import re
+import os
 from dotenv import load_dotenv
 # import openai
 import ast
@@ -7,6 +8,7 @@ from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain.docstore.document import Document
 # from langchain_core.runnables import RunnablePassthrough
 from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_core.messages.utils import get_buffer_string
 # from langchain_chroma import Chroma
 # from langchain_core.output_parsers import StrOutputParser
 # from langchain.embeddings import GooglePalmEmbeddings
@@ -15,6 +17,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import OpenAI
 # from langchain.chat_models import GooglePalm
+import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
 
 load_dotenv()
 
@@ -137,8 +143,11 @@ def get_entity_chatgpt(web_data: str, csv_data: str, user_prompt: str) -> str:
 
 def format_output(output: str) -> list:
     # Extract the JSON-like list from the output string
+    output = output if isinstance(output, str) else get_buffer_string(output)
     match = re.search(r'\[.*\]', output, re.DOTALL)
+
     print('\n\nmatch:\n\n', match)
+
     if match:
         extracted_data = match.group(0)
         # Convert the string to a list of dictionaries
@@ -162,43 +171,45 @@ def preprocess_df_for_llm(df):
   return df_string
 
 
-# def get_entity_from_gemini(web_data: str, 
-#                            csv_data: str, 
-#                            user_prompt: str) -> str:
+def get_entity_from_gemini(web_data: str, 
+                           csv_data: str, 
+                           user_prompt: str) -> str:
+
+    genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
 
-#     embeddings = GooglePalmEmbeddings(model="models/embedding-gecko-001")
-#     model = GooglePalm(model="models/chat-bison-001")
-#     context = [Document(page_content=web_data)]
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    context = [Document(page_content=web_data)]
 
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-#     splits = text_splitter.split_documents(context)
-#     vectorstore = InMemoryVectorStore(embeddings)
-#     vectorstore.add_documents(documents=splits)
-#     # vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    splits = text_splitter.split_documents(context)
+    vectorstore = InMemoryVectorStore(embeddings)
+    vectorstore.add_documents(documents=splits)
+    # vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
 
-#     # Retrieve and generate using the relevant snippets of the web data.
-#     retriever = vectorstore.as_retriever()
-#     retrieved_docs = retriever.get_relevant_documents(user_prompt)
+    # Retrieve and generate using the relevant snippets of the web data.
+    retriever = vectorstore.as_retriever()
+    retrieved_docs = retriever.get_relevant_documents(user_prompt)
  
-#     # Combine retrieved documents into a single string
-#     retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
+    # Combine retrieved documents into a single string
+    retrieved_docs = "\n".join([doc.page_content for doc in retrieved_docs])
 
-#     # Create a template 
-#     prompt = ChatPromptTemplate.from_template(template)
-#     print("prompt created")
-#     print(prompt)
+    # Create a template 
+    prompt = ChatPromptTemplate.from_template(template)
+    print("prompt created")
+    print(prompt)
     
-#     rag_chain = (
-#     {
-#             "WEB_DATA": lambda x: x,  
-#             "CSV_DATA": lambda x: x,  # Join data entities as a string
-#             "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
-#     }
-#     | prompt
-#     | model
-#     | format_output)
+    rag_chain = (
+    {
+            "WEB_DATA": lambda x: x,  
+            "CSV_DATA": lambda x: x,  # Join data entities as a string
+            "USER_PROMPT": lambda x: x  # Pass the user prompt as a string
+    }
+    | prompt
+    | model
+    )
     
-#     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
-#                              "CSV_DATA": csv_data, 
-#                              "USER_PROMPT": user_prompt})
+    return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
+                             "CSV_DATA": csv_data, 
+                             "USER_PROMPT": user_prompt})

@@ -6,17 +6,20 @@
 # # Add the src directory to the Python path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
+import json
+import re
 import streamlit as st
 import pandas as pd
 from io import StringIO
-from utils.gsheets import get_google_sheet
+from src.utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
-from llm.engine import (get_entity_from_ollama, 
-                        preprocess_df_for_llm, 
+from src.llm.engine import (get_entity_from_ollama, 
+                        preprocess_df_for_llm,
+                        get_entity_from_gemini,
                         get_entity_chatgpt)
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
-from scraper.webscraper import scrape, extract_text_from_html
+from src.scraper.webscraper import scrape, extract_text_from_html
 
 
 
@@ -85,6 +88,16 @@ def LLM_out_to_dict(output: str) -> pd.DataFrame:
     LLM_gen_entities = out.keys()
     return out, LLM_gen_entities
 
+def Gemini_out_parser(output) -> pd.DataFrame:
+    output = output.content
+    # Extract JSON using regex to remove the markdown formatting
+    json_string = re.search(r'```json\n({.*})\n```', output, re.DOTALL).group(1)
+
+    # Load JSON to a dictionary
+    data_dict = json.loads(json_string)
+
+    # Convert "result" list to a DataFrame
+    return pd.DataFrame(data_dict["result"])
 
 def main():
     """
@@ -110,7 +123,7 @@ def main():
     st.write("Ensure your CSV file has a 'Links' column with the URLs to scrape.")
     st.write('First row contains only "Links" and data entities that you want to scrape.')
 
-    model = st.radio("Select the model", ('ChatGPT', 'Ollama'))
+    model = st.radio("Select the model", ('ChatGPT', 'Gemini', 'Ollama'))
 
     # Get the user's choice for uploading the CSV file(Google Sheets or Upload CSV File)
     status = st.radio("How would you like to upload the CSV file?", ('Google Sheets', 'Upload CSV File'))
@@ -183,7 +196,6 @@ def main():
                 except ProtocolError  as e:
 
                     st.write(f"Network error({link}). Please try later...")
-
                     html = [str(e)]
                 
                 except Exception as e:
@@ -218,6 +230,10 @@ def main():
                         if model == 'ChatGPT':
 
                             entity = get_entity_chatgpt(text, csv_data, prompt)
+
+                        elif model == 'Gemini':
+                                
+                                entity = get_entity_from_gemini(text, csv_data, prompt)
                         else:
 
                             entity = get_entity_from_ollama(text, csv_data, prompt)
