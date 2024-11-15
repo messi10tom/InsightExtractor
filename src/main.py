@@ -1,4 +1,4 @@
-# src/main.py
+# # src/main.py
 
 # import sys
 # import os
@@ -11,15 +11,19 @@ import re
 import streamlit as st
 import pandas as pd
 from io import StringIO
-from src.utils.gsheets import get_google_sheet
+from utils.gsheets import get_google_sheet
 from gspread.exceptions import NoValidUrlKeyFound
-from src.llm.engine import (get_entity_from_ollama, 
+from llm.engine import (get_entity_from_ollama, 
                         preprocess_df_for_llm,
                         get_entity_from_gemini,
                         get_entity_chatgpt)
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
-from src.scraper.webscraper import scrape, extract_text_from_html
+from scraper.webscraper import scrape, extract_text_from_html
+from colorama import Fore, Back, Style, init
+
+# Initialize colorama
+init()
 
 
 
@@ -42,14 +46,23 @@ def upload_csv_from_device() -> pd.DataFrame:
         try:
 
             df = pd.read_csv(uploaded_files)
+            print(Back.GREEN + '\n\nSuccesfully uploaded via computer\n\n' + Style.RESET_ALL)
 
         except UnicodeDecodeError:
+
             st.error("Invalid file format")
             return None
         
         except pd.errors.ParserError:
+
             st.error("Invalid file format")
             return None
+        
+        except Exception as e:
+
+            st.error(f"An error occurred: {e}")
+            return None
+        
         # display the dataframe
         st.write(df)
 
@@ -64,11 +77,18 @@ def CSV_from_google_sheet() -> pd.DataFrame:
     # TODO: Update current Google Sheet using the Google Sheets API
 
     # get the link of the google sheet
-    link = st.text_input("Enter the link of the google sheet")
-    if st.button("Get Google Sheet"):
-        # get the google sheet data
+    with st.form("my_form"):
+        link = st.text_input("Enter the link of the google sheet")
+        st.form_submit_button("Submit")
+    # get the google sheet data
+    if link:
         try:
             df = pd.DataFrame(get_google_sheet(link))
+            print(Back.GREEN + '\n\nSuccesfully uploaded via GSheets\n\n' + Style.RESET_ALL)
+
+            # display the dataframe
+            st.write(df)
+            return df
         except PermissionError:
             st.error('In sheets, change access "Restricted" to "Anyone with link"')
             return None
@@ -76,10 +96,12 @@ def CSV_from_google_sheet() -> pd.DataFrame:
         except NoValidUrlKeyFound:
             st.error('Invalid URL')
             return None
+        
+        except Exception as e:
 
-        # display the dataframe
-        st.write(df)
-        return df
+            st.error(f"An error occurred: {e}")
+            return None
+
 
 # Helper function to convert LLM output to a structured Dictionary
 def LLM_out_to_dict(output: str) -> pd.DataFrame:
@@ -99,6 +121,24 @@ def Gemini_out_parser(output) -> pd.DataFrame:
 
     # Convert "result" list to a DataFrame
     return pd.DataFrame(data_dict["result"])
+
+def update_df(df: pd.DataFrame, 
+              llm_entities: list,
+              user_def_entities: list,
+              ai_data: dict,
+              idx:int) -> pd.DataFrame:
+    
+    for key in llm_entities:
+        # Skip the 'Links' column or any user given data
+        if key in user_def_entities:
+            continue
+
+        print(Back.GREEN + f'\n\nhi{'\n'.join(ai_data[key])}\n\n' + Style.RESET_ALL)
+
+        # Update a cell in the new column
+        df.at[idx, key] = '\n'.join(ai_data[key])
+        print(Back.BLUE + f'\n\nhi{key}\n{df[key]}\n\n' + Style.RESET_ALL)
+    return df
 
 def main():
     """
@@ -125,19 +165,25 @@ def main():
     st.write('First row contains only "Links" and data entities that you want to scrape.')
 
     model = st.radio("Select the model", ('Gemini', 'ChatGPT', 'Ollama'))
+    df = None
 
     # Get the user's choice for uploading the CSV file(Google Sheets or Upload CSV File)
     status = st.radio("How would you like to upload the CSV file?", ('Google Sheets', 'Upload CSV File'))
     
     # conditional statement
-    if (status == 'Google Sheets'):
-        df = CSV_from_google_sheet()
-
-    else:
+    if (status == 'Upload CSV File'):
         df = upload_csv_from_device()
 
+    else:
+        try:
+
+            df = CSV_from_google_sheet()
+
+        except Exception as e:
+            st.write(f"Something gone wrong try again. {e}")
+
     # Check if the DataFrame is not empty
-    if df is not None and not df.empty:
+    if df is not None:
         # Prompt the user to enter a prompt.
         # This prompt will be used to perform a similarity search and RAG (Retrieval-Augmented Generation) pipeline
         # to collect relevant data from the scraped content.
@@ -146,8 +192,19 @@ def main():
         st.write('For example, "I want to collect {company} information from the website."')
         st.write('The placeholders should match the data entities in the first row of the CSV file.')
         st.write('{company} will be replaced by company information from the CSV file.')
-        user_prompt = st.text_input("Enter the Prompt")
-        if st.button('Submit'):
+        print('succesfully_uploaded')
+        user_def_entities = df.columns.tolist()
+        
+        with st.form('key 2'):
+           user_prompt = st.text_area("Enter the Prompt")
+           st.form_submit_button('Submit')
+
+        st.write(f"User Prompt: {user_prompt}")
+
+        if user_prompt.strip():
+             
+            print(Back.GREEN + f'\n\n{user_prompt}\n\n' + Style.RESET_ALL)
+            
             # Check if the DataFrame contains a 'Links' column
 
             # Create a placeholder for progress messages
@@ -234,12 +291,13 @@ def main():
 
                         elif model == 'Gemini':
                                 
-                                entity = get_entity_from_gemini(text, csv_data, prompt)
+                            entity = get_entity_from_gemini(text, csv_data, prompt)
+
                         else:
 
                             entity = get_entity_from_ollama(text, csv_data, prompt)
 
-                        print("\n\nEntity:\n\n", entity)
+                        print(Back.CYAN + f'\n\n{entity}\n\n' + Style.RESET_ALL)
 
                     except SyntaxError as e:
                         #  SyntaxError: invalid syntax 
@@ -268,20 +326,29 @@ def main():
 
                         # Convert the LLM output to a structured dictionary
                         entity, LLM_gen_entities = LLM_out_to_dict(entity)
+                        print(Back.BLUE + f'\n\n{entity}\n\n' + Style.RESET_ALL)
+
+                    
+                        # Update the DataFrame with the generated entities
+                        df = update_df(df, LLM_gen_entities, user_def_entities, entity, idx)
 
                         print("\n\nstructured output:\n\n", LLM_gen_entities)
+                        # for key in LLM_gen_entities:
 
-                        for key in LLM_gen_entities:
+                        #     # Skip the 'Links' column or any user given datas
+                        #     if key in df.columns and not df[key].isnull().all():
+                        #         continue
 
-                            # Skip the 'Links' column or any user given datas
-                            if key in df.columns and not df[key].isnull().all():
-                                continue
-                            # Check if the column exists, if not, create it
-                            if key not in df.columns:
-                                df[key] = None
+                        #     # Check if the column exists, if not, create it
+                        #     if key not in df.columns:
+                        #         df[key] = None
 
-                            # Update a cell in the new column
-                            df.at[idx, key] = '\n'.join(entity[key]) 
+                        #     print(Back.BLUE + f'\n\nhi{key}\n{df[key]}\n\n' + Style.RESET_ALL)
+                        #     print(Back.GREEN + f'\n\nhi{'\n'.join(entity[key])}\n\n' + Style.RESET_ALL)
+                            
+                        #     # Update a cell in the new column
+                        #     df.at[idx, key] = '\n'.join(entity[key])
+                        #     print(Back.BLUE + f'\n\n{key}\n{df[key]}\n\n' + Style.RESET_ALL)
 
                 else:
 
@@ -309,6 +376,8 @@ def main():
                 file_name='output.csv',
                 mime='text/csv',
             )
+
+
 
 
 

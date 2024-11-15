@@ -14,3 +14,4 @@ langchain-text-splitters
 langchain-openai
 google-generativeai
 langchain-google-genai
+coloroma

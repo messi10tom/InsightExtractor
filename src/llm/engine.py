@@ -210,6 +210,8 @@ def get_entity_from_gemini(web_data: str,
     }
     | prompt
     | model
+    | StrOutputParser()
+    | format_output
     )
     
     return rag_chain.invoke({"WEB_DATA": retrieved_docs, 
