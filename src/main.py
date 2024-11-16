@@ -20,10 +20,7 @@ from llm.engine import (get_entity_from_ollama,
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
 from scraper.webscraper import scrape, extract_text_from_html
-from colorama import Fore, Back, Style, init
 
-# Initialize colorama
-init()
 
 
 
@@ -46,7 +43,7 @@ def upload_csv_from_device() -> pd.DataFrame:
         try:
 
             df = pd.read_csv(uploaded_files)
-            print(Back.GREEN + '\n\nSuccesfully uploaded via computer\n\n' + Style.RESET_ALL)
+            print('\n\nSuccesfully uploaded via computer\n\n')
 
         except UnicodeDecodeError:
 
@@ -83,7 +80,7 @@ def CSV_from_google_sheet() -> pd.DataFrame:
     if link:
         try:
             df = pd.DataFrame(get_google_sheet(link))
-            print(Back.GREEN + '\n\nSuccesfully uploaded via GSheets\n\n' + Style.RESET_ALL)
+            print('\n\nSuccesfully uploaded via GSheets\n\n')
 
             # display the dataframe
             st.write(df)
@@ -132,11 +129,11 @@ def update_df(df: pd.DataFrame,
         if key in user_def_entities:
             continue
 
-        print(Back.GREEN + f'\n\nhi{'\n'.join(ai_data[key])}\n\n' + Style.RESET_ALL)
+        print(f'\n\n{'\n'.join(ai_data[key])}\n\n')
 
         # Update a cell in the new column
         df.at[idx, key] = '\n'.join(ai_data[key])
-        print(Back.BLUE + f'\n\nhi{key}\n{df[key]}\n\n' + Style.RESET_ALL)
+        print(f'\n\n{key}\n{df[key]}\n\n')
     return df
 
 def main():
@@ -205,7 +202,7 @@ def main():
 
         if user_prompt.strip():
              
-            print(Back.GREEN + f'\n\n{user_prompt}\n\n' + Style.RESET_ALL)
+            print(f'\n\n{user_prompt}\n\n')
             
             # Check if the DataFrame contains a 'Links' column
 
@@ -299,7 +296,7 @@ def main():
 
                             entity = get_entity_from_ollama(text, csv_data, prompt)
 
-                        print(Back.CYAN + f'\n\n{entity}\n\n' + Style.RESET_ALL)
+                        print(f'\n\n{entity}\n\n')
 
                     except SyntaxError as e:
                         #  SyntaxError: invalid syntax 
@@ -328,7 +325,7 @@ def main():
 
                         # Convert the LLM output to a structured dictionary
                         entity, LLM_gen_entities = LLM_out_to_dict(entity)
-                        print(Back.BLUE + f'\n\n{entity}\n\n' + Style.RESET_ALL)
+                        print(f'\n\n{entity}\n\n')
 
                     
                         # Update the DataFrame with the generated entities
@@ -379,8 +376,9 @@ def main():
                                     mime='text/csv',
                                 )
             if succes:
+                print('succesfully downloaded')
                 del text, csv_data, prompt, formatted_user_prompt, links, link, html
-                return
+                st.stop()
     
     else:
         st.write("Please wait...")
