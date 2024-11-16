@@ -2,6 +2,7 @@ import re
 import os
 from dotenv import load_dotenv
 # import openai
+import streamlit as st
 import ast
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
@@ -177,7 +178,7 @@ def get_entity_from_gemini(web_data: str,
                            csv_data: str, 
                            user_prompt: str) -> str:
 
-    genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 
     model = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
