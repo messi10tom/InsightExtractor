@@ -20,9 +20,6 @@ from llm.engine import (get_entity_from_ollama,
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
 from scraper.webscraper import scrape, extract_text_from_html
-from colorama import Fore, Back, Style, init
-
-init(autoreset=True)
 
 
 def upload_csv_from_device() -> pd.DataFrame:
@@ -297,7 +294,7 @@ def main():
 
                             entity = get_entity_from_ollama(text, csv_data, prompt)
 
-                        print(Back.BLUE + f'\n\n{entity}\n\n' + Style.RESET_ALL)
+                        print(f'\n\n{entity}\n\n')
 
                     except SyntaxError as e:
                         #  SyntaxError: invalid syntax 
@@ -326,7 +323,7 @@ def main():
 
                         # Convert the LLM output to a structured dictionary
                         entity, LLM_gen_entities = LLM_out_to_dict(entity)
-                        print(Back.CYAN + f'\n\n{entity}\n\n' + Style.RESET_ALL)
+                        print(f'\n\n{entity}\n\n')
 
                     
                         # Update the DataFrame with the generated entities
