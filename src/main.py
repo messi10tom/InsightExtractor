@@ -11,7 +11,7 @@ import re
 import streamlit as st
 import pandas as pd
 from io import StringIO
-from utils.gsheets import get_google_sheet
+from utils.gsheets import get_google_sheet, update_google_sheet_from_df
 from gspread.exceptions import NoValidUrlKeyFound
 from llm.engine import (get_entity_from_ollama, 
                         preprocess_df_for_llm,
@@ -74,7 +74,6 @@ def upload_csv_from_device() -> pd.DataFrame:
 def CSV_from_google_sheet() -> pd.DataFrame:
     
     # TODO: Multiple pages in google sheets
-    # TODO: Update current Google Sheet using the Google Sheets API
 
     # get the link of the google sheet
     with st.form("my_form"):
@@ -88,7 +87,7 @@ def CSV_from_google_sheet() -> pd.DataFrame:
 
             # display the dataframe
             st.write(df)
-            return df
+            return df, link
         except PermissionError:
             st.error('In sheets, change access "Restricted" to "Anyone with link"')
             return None
@@ -177,7 +176,10 @@ def main():
     else:
         try:
 
-            df = CSV_from_google_sheet()
+            df, gsheet_link = CSV_from_google_sheet()
+
+        except TypeError:
+            pass
 
         except Exception as e:
             st.write(f"Something gone wrong try again. {e}")
@@ -370,13 +372,19 @@ def main():
             csv_bytes = StringIO(csv).getvalue().encode('utf-8')
 
             # Download button
-            st.download_button(
-                label="Download CSV",
-                data=csv_bytes,
-                file_name='output.csv',
-                mime='text/csv',
-            )
-
+            succes = st.download_button(
+                                    label="Download CSV",
+                                    data=csv_bytes,
+                                    file_name='output.csv',
+                                    mime='text/csv',
+                                )
+            if succes:
+                del text, csv_data, prompt, formatted_user_prompt, links, link, html
+                return
+    
+    else:
+        st.write("Please wait...")
+                   
 
 
 

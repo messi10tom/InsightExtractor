@@ -15,3 +15,4 @@ langchain-openai
 google-generativeai
 langchain-google-genai
 coloroma
+gspread-dataframe
