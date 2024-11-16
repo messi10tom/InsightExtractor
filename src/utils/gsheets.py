@@ -1,12 +1,23 @@
 import os
 from dotenv import load_dotenv
-
+import streamlit as st
+import json
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
 
 load_dotenv()
-CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+
+# Load the JSON content from Streamlit secrets
+credentials_dict = json.loads(st.secrets["credentials"])
+
+# Save it temporarily to use with Google APIs
+with open("temp_credentials.json", "w") as file:
+    json.dump(credentials_dict, file)
+
+# Use the temp file for authentication (example for Google Cloud services)
+CREDENTIALS = "temp_credentials.json"
 
 def get_google_sheet(link: str):
     """
@@ -55,5 +66,5 @@ def update_google_sheet_from_df(link: str, df):
     set_with_dataframe(worksheet, df)
     
     print(f"Updated Google Sheet '{link}' in worksheet sheet1 with DataFrame data.")
-    
+
     return True

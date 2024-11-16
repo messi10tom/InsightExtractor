@@ -1,7 +1,7 @@
 # # src/main.py
 
 # import sys
-# import os
+import os
 
 # # Add the src directory to the Python path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -378,6 +378,7 @@ def main():
             if succes:
                 print('succesfully downloaded')
                 del text, csv_data, prompt, formatted_user_prompt, links, link, html
+                os.remove("temp_credentials.json")
                 st.stop()
     
     else:

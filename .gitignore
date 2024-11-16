@@ -3,7 +3,9 @@ IE/
 
 # Ignore the credentials file
 credentials.json
+.streamlit/secrets.toml
 .env
+temp_credentials.json
 
 # Ignore compiled Python files
 src/utils/__pycache__/
