@@ -8,6 +8,10 @@
 ![InsightExtractor Banner](./doc/banner.png)
 
 InsightExtractor is an AI-powered tool for automated data retrieval. Connect CSVs or Google Sheets, define queries, and extract structured insights via web search and LLMs. Features include customizable prompts, API integration, and an intuitive dashboard for data export.
+## Video Tutorial
+
+For a detailed walkthrough on how to use InsightExtractor, check out our [YouTube video tutorial](https://youtu.be/ATr7Y5CtE1E).
+
 ## Supported Models
 
 InsightExtractor supports multiple AI models for data extraction and processing. Users can choose from the following models:
