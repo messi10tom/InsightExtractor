@@ -11,10 +11,12 @@ import re
 import streamlit as st
 import pandas as pd
 from io import StringIO
-from utils.gsheets import get_google_sheet
+from utils.gsheets import get_google_sheet, update_google_sheet_from_df
 from gspread.exceptions import NoValidUrlKeyFound
-from llm.engine import (preprocess_df_for_llm,
-                        get_entity_from_gemini)
+from llm.engine import (get_entity_from_ollama, 
+                        preprocess_df_for_llm,
+                        get_entity_from_gemini,
+                        get_entity_chatgpt)
 from selenium.common.exceptions import WebDriverException
 from urllib3.exceptions import ProtocolError
 from scraper.webscraper import scrape, extract_text_from_html
@@ -156,6 +158,7 @@ def main():
     st.write("Ensure your CSV file has a 'Links' column with the URLs to scrape.")
     st.write('First row contains only "Links" and data entities that you want to scrape.')
 
+    model = st.radio("Select the model", ('Gemini', 'ChatGPT', 'Ollama'))
     df = None
 
     # Get the user's choice for uploading the CSV file(Google Sheets or Upload CSV File)
@@ -168,7 +171,7 @@ def main():
     else:
         try:
 
-            df, _ = CSV_from_google_sheet()
+            df, gsheet_link = CSV_from_google_sheet()
 
         except TypeError:
             pass
@@ -278,9 +281,19 @@ def main():
 
 
                     # get_entity_from_ollama(web_data: str, data_entity: list, user_prompt: str) -> str:
-                    try: 
+                    try:
+                        if model == 'ChatGPT':
 
-                        entity = get_entity_from_gemini(text, csv_data, prompt)
+                            entity = get_entity_chatgpt(text, csv_data, prompt)
+
+                        elif model == 'Gemini':
+                                
+                            entity = get_entity_from_gemini(text, csv_data, prompt)
+
+                        else:
+
+                            entity = get_entity_from_ollama(text, csv_data, prompt)
+
                         print(f'\n\n{entity}\n\n')
 
                     except SyntaxError as e:
