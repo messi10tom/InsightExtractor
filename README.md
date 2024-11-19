@@ -40,6 +40,17 @@ To install InsightExtractor, follow these steps:
     git clone https://github.com/messi10tom/InsightExtractor.git
     cd InsightExtractor
     ```
+    **Windows**
+    ```
+    python -m venv IE
+    IE\Scripts\activate
+    ```
+    **macOS and Linux**
+    ```
+    python3 -m venv IE
+    source IE/bin/activate
+    ```
+    
 
 2. **Install Dependencies**:
     ```sh
