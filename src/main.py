@@ -152,7 +152,7 @@ def main():
     """
     # Welcome to InsightExtractor
     st.title('Welcome to InsightExtractor')
-    sample_df = pd.read_csv('./sample.csv')
+    sample_df = pd.DataFrame([{"Links":"example1.com","company":"company_1"},{"Links":"example2.com","company":"company_2"}])
     st.write('Here is a sample CSV file')
     st.write(sample_df)
     st.write("Ensure your CSV file has a 'Links' column with the URLs to scrape.")
