@@ -8,6 +8,7 @@
 ![InsightExtractor Banner](./doc/banner.png)
 
 InsightExtractor is an AI-powered tool for automated data retrieval. Connect CSVs or Google Sheets, define queries, and extract structured insights via web search and LLMs. Features include customizable prompts, API integration, and an intuitive dashboard for data export.
+
 ## Video Tutorial
 
 For a detailed walkthrough on how to use InsightExtractor, check out our [YouTube video tutorial](https://youtu.be/ATr7Y5CtE1E).
@@ -94,6 +95,8 @@ To install InsightExtractor, follow these steps:
         ```sh
         ollama run llama3.2
         ```
+- **Set up streamlit secrets**
+    - create ```.streamlit\secrets.toml``` and paste all the API keys in the following format
     ```env
     BD_AUTH=""
     GOOGLE_APPLICATION_CREDENTIALS="path/to/your/credentials.json"
