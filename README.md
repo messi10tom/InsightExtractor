@@ -97,7 +97,7 @@ To install InsightExtractor, follow these steps:
     5. **Save API Key in `.env` File**:
         - Add the following line to your `.env` file:
             ```env
-            CHATGPT_API_KEY=your_api_key_here
+            OPENAI_API_KEY=your_api_key_here
             ```
 
 - **Set Up Ollama**:
